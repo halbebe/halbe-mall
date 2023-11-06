@@ -92,10 +92,15 @@ catch {
     // await Products.updateOne({ _id:id },{
     //     title,content,author
     //   }) 참고용
-    const { _id } = req.params;
-  const { title, content, status, password, author } = req.body;
+    try {
+    const {_id} = req.params;
+  const { title, content, status, password} = req.body;
 
-  try {
+  if (!title||!content||!password||!_id||!status)
+  { return res.status(400).json({ 
+      errorMessage: '데이터 형식이 올바르지 않습니다.' 
+  });
+  }
     const existingProduct = await Products.findOne(_id);
 
     if (existingProduct.password !== password) {
@@ -123,33 +128,51 @@ catch {
 });
 
     //상품 삭제
-    router.delete("/products/:productsId", async(req, res) => {
+    router.delete("/products/:_id", async(req, res) => {
         // await Products.deleteOne({_id:id}); 참고용
         // const {productsId} = req.params;
 
         // const existsproducts = await 
-        const {productsId} = req.params;
-        console.log(productsId);
+        try{
+        const {_id} = req.params;
         const {password} = req.body;
-
-        const existsproducts = await Products.find({_id:productsId});
-       console.log(existsproducts, password);
-
-        if(existsproducts[0].password !== password){
-            return res.status(401).json({
-                "message": "상품을 삭제할 권한이 존재하지 않습니다."
+        if (!_id||!password){
+            console.log(_id,password);
+            return res.status(400).json({
+                "message": "데이터 형식이 올바르지않습니다."
               })
-              
-        };
+        }
+        const existsproducts = (await Products.find({})).filter(p => p._id.toString() === _id);
+    //     const existsproducts = await Products.find({_id});
+    //    console.log(existsproducts, password);
+
         
-
+        
+    console.log(existsproducts);
          if(existsproducts.length){
-            await Products.deleteOne({productsId});
-        };
+            if(existsproducts[0].password !== password){
+                return res.status(401).json({
+                    "message": "상품을 삭제할 권한이 존재하지 않습니다."
+                  })
+                  
+            };
+            await Products.deleteOne({_id});
+return res.json({
+                "message": "상품을 삭제하였습니다."
+              });
+        } else {
+            return res.status(404).json({
+                "message": "상품 조회에 실패하였습니다."
+              });
+        }
 
-        return res.json({
-            "message": "상품을 삭제하였습니다."
-          });
+       
+        }
+        catch{
+            return res.status(400).json({
+                "message": "데이터 형식이 올바르지않습니다."
+              })
+        }
     });
 
 module.exports = router;
