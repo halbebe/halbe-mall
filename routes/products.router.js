@@ -4,56 +4,87 @@ const Products = require("../schemas/products.schema.js");
 
 //상품 등록
 router.post("/products", async(req,res)=> {
-    const {title, content, author, password} = req.body;
-    // {
-    //     "title":"아이폰15 MAX",
-    //     "content": "얼마 사용하지 않은 제품 팝니다.",
-    //     "author":"판매자",
-    //     "password":"1234"
-    //   }
+    try{
+        const {title, content, author, password} = req.body;
 
-    // 현재 날짜 및 시간 생성
-    let currentDate = new Date();
-    let year = currentDate.getFullYear();
-    let month = currentDate.getMonth() + 1; // 월은 0부터 시작하므로 1을 더해줍니다.
-    let day = currentDate.getDate();
-    let hours = currentDate.getHours(); // 시간
-    let minutes = currentDate.getMinutes(); // 분
-    let seconds = currentDate.getSeconds(); // 초
-    let date = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 
-    await Products.create({
-        title,
-        content,
-        author,
-        status: "for sale", 
-        password,
-        createdAt: date
-        
-    });
-    res.json({
-        "message": "판매 상품을 등록하였습니다."
-      });
+        if (!title||!content||!author||!password)
+        {return res.status(400).json({ 
+            errorMessage: '데이터 형식이 올바르지 않습니다.' 
+        });
+        }
+        // {
+        //     "title":"아이폰15 MAX",
+        //     "content": "얼마 사용하지 않은 제품 팝니다.",
+        //     "author":"판매자",
+        //     "password":"1234"
+        //   }
+    
+        // 현재 날짜 및 시간 생성
+        let currentDate = new Date();
+        let year = currentDate.getFullYear();
+        let month = currentDate.getMonth() + 1; // 월은 0부터 시작하므로 1을 더해줍니다.
+        let day = currentDate.getDate();
+        let hours = currentDate.getHours(); // 시간
+        let minutes = currentDate.getMinutes(); // 분
+        let seconds = currentDate.getSeconds(); // 초
+        let date = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    
+        await Products.create({
+            title,
+            content,
+            author,
+            status: "for sale", 
+            password,
+            createdAt: date
+            
+        });
+        return res.json({
+            "message": "판매 상품을 등록하였습니다."
+          });
+    }
+    catch {
+        return res.status(400).json({ 
+            errorMessage: '데이터 형식이 올바르지 않습니다.' 
+        });
+    }
+
 })
 
 //상품 목록 조회
 router.get("/products", async(req, res) => {
    const products = await Products.find({
    });
-   res.json({
+
+   products.sort((a,b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+
+   return res.json({
     data:products
    });
 });
 
 //상품 상세 조회
 router.get("/products/:productsId", async(req, res) => {
-   const {productsId} = req.params;
+
+try{
+    const {productsId} = req.params;
    const products = (await Products.find({})).filter(p => p._id.toString() === productsId);
+   
    if (products.length === 0){
-    //실패 이따가
+    return res.status(404).json({
+        "message": "상품 조회에 실패하였습니다."
+      })
     } else {
-        res.json({data: products[0]});
+        return res.json({data: products[0]});
     } 
+}
+catch {
+    return res.status(404).json({
+        "message": "상품 조회에 실패하였습니다."
+    })
+}
+
+   
  });
 
  //상품 수정
@@ -79,15 +110,15 @@ router.get("/products/:productsId", async(req, res) => {
       existingProduct.password = password;
 
       await existingProduct.save();
-      res.json({
+      return res.json({
         message: "상품 정보를 수정하였습니다.",
       });
     } else {
-      res.json({ message: "상품을 찾을 수 없습니다." });
+        return res.json({ message: "상품을 찾을 수 없습니다." });
     }
   } catch (error) {
     console.log(error);
-    res.json({ message: "서버 오류가 발생했습니다." });
+    return res.json({ message: "서버 오류가 발생했습니다." });
   }
 });
 
@@ -116,7 +147,7 @@ router.get("/products/:productsId", async(req, res) => {
             await Products.deleteOne({productsId});
         };
 
-        res.json({
+        return res.json({
             "message": "상품을 삭제하였습니다."
           });
     });
